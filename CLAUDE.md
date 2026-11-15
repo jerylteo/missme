@@ -35,7 +35,7 @@ Status: Phase 1 built. Phase 2 (admin) not started. The admin PIN currently open
 4. Layout verified at 402x874 and in standalone mode, not only 390x844. `viewport-fit=cover`, `100dvh`, safe-area insets.
 5. Dev-only "reset progress" control (stripped from production builds) so the viewer flow can be tested before Phase 2 exists.
 6. Spec 4.5 stands: do not "harden" the PIN scheme.
-7. Reveal has two exits (Jeryl, 15 Nov 2026): primary "Keep it on my shelf" opens the shelf, and a "Back to home" link returns home. Spec 9.4 had a single button that returned home.
+7. Reveal has one exit (Jeryl, 15 Nov 2026): "Keep it on my shelf" opens the shelf, not home, because home is in cooldown anyway. A "Back to home" link was tried and removed the same day.
 
 ## Design sources
 

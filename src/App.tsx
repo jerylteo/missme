@@ -176,8 +176,6 @@ function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: C
           animate={!view.fromShelf}
           primaryLabel={view.fromShelf ? 'Back to my shelf' : 'Keep it on my shelf'}
           onPrimary={() => go({ k: 'shelf' })}
-          secondaryLabel="Back to home"
-          onSecondary={() => go({ k: 'home' })}
           footer={footer}
         />
       )
