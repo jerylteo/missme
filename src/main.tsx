@@ -11,3 +11,11 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Started fine: allow a future recovery reload and drop its cache-busting query.
+try {
+  sessionStorage.removeItem('missme:recovered')
+} catch {
+  // optional
+}
+if (location.search.includes('r=')) history.replaceState(null, '', location.pathname)

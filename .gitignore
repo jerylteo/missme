@@ -29,3 +29,8 @@ content.local.json
 .env.*
 test-results
 playwright-report
+
+# Private project notes: kept locally, not in the public repo
+CLAUDE.md
+MISSME_SPEC.md
+PASSLOG.md

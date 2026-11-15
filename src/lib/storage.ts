@@ -78,3 +78,28 @@ export function toggleFavourite(state: LocalState, id: string): LocalState {
   const has = state.favourites.includes(id)
   return { ...state, favourites: has ? state.favourites.filter((f) => f !== id) : [...state.favourites, id] }
 }
+
+/** The GitHub token lives in its own key so a progress reset never touches it. */
+export const TOKEN_KEY = 'missme:gh-token'
+
+export function loadToken(): string {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function saveToken(token: string): boolean {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function clearToken(): void {
+  saveToken('')
+}

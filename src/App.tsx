@@ -6,6 +6,7 @@ import { type Content, type Message, SURPRISE } from './lib/content.ts'
 import { draw, pickNickname, pool } from './lib/draw.ts'
 import { dayLabel, formatCountdown, type Gate, gate, shortCountdown, spokenCountdown } from './lib/limits.ts'
 import { recordOpen, toggleFavourite } from './lib/storage.ts'
+import { Admin } from './screens/Admin.tsx'
 import { Lock } from './screens/Lock.tsx'
 import { Opening } from './screens/Opening.tsx'
 import { Reveal } from './screens/Reveal.tsx'
@@ -65,11 +66,9 @@ function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: C
   const [picked, setPicked] = useState(SURPRISE)
   const [now, setNow] = useState(() => Date.now())
   const [nickname] = useState(() => pickNickname(content.settings.nicknames))
-  const [confirmReset, setConfirmReset] = useState(false)
 
   const go = (next: View) => {
     setNow(Date.now())
-    setConfirmReset(false)
     setView(next)
     window.scrollTo(0, 0)
   }
@@ -200,40 +199,22 @@ function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: C
     )
   }
 
-  // ---------- Admin (Phase 1 stub) ----------
-  if (view.k === 'admin') {
+  // ---------- Admin (admin PIN only) ----------
+  if (view.k === 'admin' && app.role === 'admin' && local.session) {
     return (
-      <main className="screen">
-        <BackBar label="Back to home" onBack={() => go({ k: 'home' })} />
-        <h1 className="h1 h1--small">Admin</h1>
-        <div className="panel">
-          <div className="label">Messages</div>
-          <p>
-            {content.messages.length} live. Editing from the phone arrives in Phase 2. For now, edit content.local.json and run npm run seal.
-          </p>
-        </div>
-        <div className="panel">
-          <div className="label">This device</div>
-          <p>
-            {local.opened.length} opened, {local.favourites.length} favourites.
-          </p>
-          <button
-            type="button"
-            className="btn-outline"
-            onClick={() => {
-              if (!confirmReset) return setConfirmReset(true)
-              app.resetProgress()
-              setConfirmReset(false)
-              setNow(Date.now())
-            }}
-          >
-            {confirmReset ? 'Tap again to reset' : 'Reset my progress on this device'}
-          </button>
-          <button type="button" className="btn-outline" onClick={app.lock}>
-            Lock this device
-          </button>
-        </div>
-      </main>
+      <Admin
+        live={content}
+        ck={local.session.ck}
+        envelope={app.envelopeRef.current}
+        device={{ opened: openedCount, favourites: local.favourites.filter((f) => byId.has(f)).length }}
+        applyPublished={app.applyPublished}
+        onResetProgress={() => {
+          app.resetProgress()
+          setNow(Date.now())
+        }}
+        onLock={app.lock}
+        onHome={() => go({ k: 'home' })}
+      />
     )
   }
 

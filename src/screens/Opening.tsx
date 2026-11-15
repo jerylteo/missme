@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import tofuPeek from '../assets/tofu-peek.png'
 import { BackBar, BlindBox } from '../components/ui.tsx'
 import type { Message, Rarity } from '../lib/content.ts'
-import { haptic } from '../lib/haptics.ts'
 import './opening.css'
 
 const TAPS = 3
@@ -133,7 +132,6 @@ export function Opening({
       busyRef.current = true
       tapsRef.current = TAPS
       setTaps(TAPS)
-      haptic(10)
       onDone(m)
       return
     }
@@ -141,14 +139,12 @@ export function Opening({
     const n = ++tapsRef.current
     setTaps(n)
     if (n < TAPS) {
-      haptic(10)
       shake(8, 250)
       return
     }
 
     busyRef.current = true
     setFinale(true)
-    haptic([20, 40, 30])
     await done(shake(12, 300))
     await done(
       lidRef.current?.animate(

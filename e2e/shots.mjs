@@ -1,7 +1,8 @@
 // Walks the whole viewer flow in WebKit at iPhone 17 Pro size and saves screenshots.
-// Usage: npm run build && npx vite preview --port 4173 &  then  node e2e/shots.mjs [outDir]
+// Usage: npm run build && npx vite preview --port 4173 &  then  node --experimental-strip-types e2e/shots.mjs [outDir]
 import { webkit } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
+import { decryptContent, unlock } from '../src/lib/crypto.ts'
 
 const out = process.argv[2] ?? 'test-results/shots'
 mkdirSync(out, { recursive: true })
@@ -9,13 +10,19 @@ const URL = process.env.MISSME_URL ?? 'http://localhost:4173/missme/'
 const VIEWER = process.env.MISSME_VIEWER_PIN ?? '111111'
 const ADMIN = process.env.MISSME_ADMIN_PIN ?? '222222'
 const problems = []
+let inShot = false
 
 const browser = await webkit.launch()
 async function ctx(width = 402, height = 874, extra = {}) {
   const c = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, hasTouch: true, isMobile: true, ...extra })
   const page = await c.newPage()
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`))
-  page.on('console', (m) => m.type() === 'error' && problems.push(`console: ${m.text()}`))
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return
+    // Playwright injects a stylesheet while screenshotting; the CSP rightly refuses it.
+    if (inShot && m.text().startsWith('Refused to apply a stylesheet')) return
+    problems.push(`console: ${m.text()}`)
+  })
   return page
 }
 async function shot(page, name) {
@@ -23,7 +30,10 @@ async function shot(page, name) {
   if (over > 0) problems.push(`${name}: horizontal overflow ${over}px`)
   const tall = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)
   console.log(`${name}: vertical overflow ${tall}px`)
+  inShot = true
   await page.screenshot({ path: `${out}/${name}.png` })
+  await page.waitForTimeout(50)
+  inShot = false
 }
 async function enter(page, pin) {
   for (const d of pin) await page.getByRole('button', { name: d, exact: true }).click()
@@ -115,14 +125,98 @@ await page.waitForTimeout(700)
 await shot(page, '17-opening-360')
 await page.context().close()
 
-// --- admin PIN shows the gear ---
+// --- admin: drafts, settings, PIN change, publish (GitHub API mocked) ---
 page = await ctx()
+const puts = []
+const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET, PUT' }
+await page.route('https://api.github.com/**', async (route) => {
+  const req = route.request()
+  if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
+  if (req.method() === 'PUT') {
+    puts.push(JSON.parse(req.postData()))
+    return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: '{}' })
+  }
+  const live = await (await fetch(`${URL}data/content.enc.json`)).text()
+  const body = JSON.stringify({ sha: 'sha-1', encoding: 'base64', content: Buffer.from(live).toString('base64') })
+  return route.fulfill({ status: 200, headers: cors, contentType: 'application/json', body })
+})
 await page.goto(URL)
 await enter(page, ADMIN)
 await page.getByRole('button', { name: 'Admin' }).waitFor({ timeout: 20000 })
 await shot(page, '18-home-admin')
 await page.getByRole('button', { name: 'Admin' }).click()
-await shot(page, '19-admin')
+await page.getByRole('heading', { name: 'Messages' }).waitFor()
+await shot(page, '19-admin-list')
+await page.getByRole('button', { name: 'New message' }).click()
+await page.getByLabel('Message', { exact: true }).fill('E2E test message from the phone')
+await page.getByRole('button', { name: 'Thinking of you', exact: true }).click()
+await page.getByRole('button', { name: /^Rare/ }).click()
+await shot(page, '19b-admin-edit')
+await page.getByRole('button', { name: 'Save to drafts' }).click()
+await page.getByText('E2E test message from the phone').waitFor()
+await page.getByRole('button', { name: 'Publish 1 change' }).waitFor()
+await page.getByRole('button', { name: 'Delete message' }).nth(1).click()
+await page.getByRole('heading', { name: 'Delete this message?' }).waitFor()
+await page.waitForTimeout(400)
+await shot(page, '19c-admin-delete-sheet')
+await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click()
+await page.getByRole('button', { name: 'Publish 2 changes' }).waitFor()
+await page.getByRole('button', { name: 'Publish 2 changes' }).click()
+await page.getByText('Add your GitHub token in Settings first.').waitFor()
+await shot(page, '19d-admin-list-drafts')
+await page.getByRole('button', { name: 'Settings', exact: true }).click()
+await page.getByRole('heading', { name: 'Settings' }).waitFor()
+await page.getByLabel('GitHub token').fill('test-token')
+await page.getByLabel('Boxes per day').fill('4')
+await page.getByLabel('Boxes per day').blur()
+await page.getByRole('button', { name: 'Change her PIN' }).click()
+await page.getByLabel('New PIN').fill(ADMIN)
+await page.getByLabel('Type it again').fill(ADMIN)
+await page.getByRole('button', { name: 'Save new PIN' }).click()
+await page.getByText('That is your PIN. Pick a different one for her.').waitFor({ timeout: 20000 })
+await page.getByLabel('New PIN').fill('333333')
+await page.getByLabel('Type it again').fill('333333')
+await page.getByRole('button', { name: 'Save new PIN' }).click()
+await page.getByText('Her new PIN takes effect when you publish.').waitFor({ timeout: 20000 })
+await shot(page, '19e-admin-settings')
+// drafts survive a reload (stored encrypted)
+await page.reload()
+await page.getByRole('button', { name: 'Admin' }).click({ timeout: 20000 })
+await page.getByRole('button', { name: 'Publish 4 changes' }).click({ timeout: 5000 })
+await page.getByText('Published. Live in about a minute.').waitFor({ timeout: 20000 })
+await page.getByText(/everything published/).waitFor()
+await shot(page, '19f-admin-published')
+if (puts.length !== 1) problems.push(`expected 1 PUT, got ${puts.length}`)
+else {
+  const env = JSON.parse(Buffer.from(puts[0].content, 'base64').toString('utf8'))
+  if (puts[0].sha !== 'sha-1') problems.push('PUT without the fetched sha')
+  if (env.data.includes('E2E')) problems.push('published file has readable text')
+  const asAdmin = await unlock(env, ADMIN)
+  const asHerNew = await unlock(env, '333333')
+  const asHerOld = await unlock(env, VIEWER)
+  if (asAdmin?.role !== 'admin') problems.push('admin PIN no longer opens the published file')
+  if (asHerNew?.role !== 'viewer') problems.push('new viewer PIN does not open the published file')
+  if (asHerOld) problems.push('old viewer PIN still opens the published file')
+  const c = await decryptContent(env, asAdmin.ck)
+  if (!c.messages.some((m) => m.text === 'E2E test message from the phone' && m.rarity === 'rare' && m.categoryId === 'thinking')) problems.push('new message missing')
+  if (c.settings.dailyLimit !== 4) problems.push('daily limit not published')
+  if (c.messages.length !== 10) problems.push(`expected 10 messages after one add and one delete, got ${c.messages.length}`)
+}
+// locking removes the token
+await page.getByRole('button', { name: 'Settings', exact: true }).click()
+await page.getByRole('button', { name: 'Lock this device' }).click()
+await page.getByRole('heading', { name: 'Who goes there?' }).waitFor()
+if (await page.evaluate(() => localStorage.getItem('missme:gh-token'))) problems.push('token survived Lock')
+await page.context().close()
+
+// --- offline after a first visit: the cached file still opens ---
+page = await ctx()
+await page.goto(URL)
+await enter(page, VIEWER)
+await page.getByRole('heading', { name: 'Miss me?' }).waitFor({ timeout: 20000 })
+await page.route('**/content.enc.json*', (r) => r.abort())
+await page.reload()
+await page.getByRole('heading', { name: 'Miss me?' }).waitFor({ timeout: 10000 })
 await page.context().close()
 
 // --- reduced motion: one tap straight to the reveal ---
@@ -137,7 +231,7 @@ await page.context().close()
 
 // --- offline ---
 page = await ctx()
-await page.route('**/content.enc.json', (r) => r.abort())
+await page.route('**/content.enc.json*', (r) => r.abort())
 await page.goto(URL)
 await page.getByRole('button', { name: 'Retry' }).waitFor({ timeout: 10000 })
 await shot(page, '21-offline')

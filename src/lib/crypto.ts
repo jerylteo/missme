@@ -97,10 +97,18 @@ async function importCk(ck: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
 }
 
 /** Decrypts the envelope payload. Throws when the key is wrong or the data was altered. */
-export async function decryptContent<T = unknown>(envelope: Envelope, ck: Uint8Array<ArrayBuffer>): Promise<T> {
+export async function decryptContent<T = unknown>(envelope: Pick<Envelope, 'iv' | 'data'>, ck: Uint8Array<ArrayBuffer>): Promise<T> {
   const key = await importCk(ck)
   const plain = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(envelope.iv) }, key, fromB64(envelope.data))
   return JSON.parse(dec.decode(plain)) as T
+}
+
+/** Encrypts the payload with an existing content key (fresh IV each time). */
+export async function encryptContent(content: unknown, ck: Uint8Array<ArrayBuffer>): Promise<{ iv: string; data: string }> {
+  const key = await importCk(ck)
+  const iv = randomBytes(12)
+  const data = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(content))))
+  return { iv: toB64(iv), data: toB64(data) }
 }
 
 export async function seal(
@@ -112,17 +120,9 @@ export async function seal(
   if (pins.viewer === pins.admin) throw new Error('The two PINs must differ.')
   const iterations = opts.iterations ?? KDF_ITERATIONS
   const ck = opts.ck ?? generateCk()
-  const key = await importCk(ck)
-  const iv = randomBytes(12)
-  const data = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(content))))
+  const { iv, data } = await encryptContent(content, ck)
   const [viewer, admin] = await Promise.all([wrapCk(ck, pins.viewer, iterations), wrapCk(ck, pins.admin, iterations)])
-  return {
-    v: 1,
-    kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations },
-    slots: { viewer, admin },
-    iv: toB64(iv),
-    data: toB64(data),
-  }
+  return { v: 1, kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations }, slots: { viewer, admin }, iv, data }
 }
 
 export function isEnvelope(x: unknown): x is Envelope {

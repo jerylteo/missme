@@ -1,38 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type Content, normalizeContent } from '../lib/content.ts'
-import { decryptContent, type Envelope, fromB64, isEnvelope, type Role, toB64, unlock } from '../lib/crypto.ts'
-import { EMPTY_STATE, loadState, type LocalState, readStored, saveState } from '../lib/storage.ts'
-import type { UnlockRequest, UnlockResponse } from '../workers/unlock.worker.ts'
+import { decryptContent, type Envelope, fromB64, isEnvelope, type Role } from '../lib/crypto.ts'
+import { clearToken, EMPTY_STATE, loadState, type LocalState, readStored, saveState, STORAGE_KEY } from '../lib/storage.ts'
+import { unlockInWorker } from '../workers/client.ts'
 
 export type Status = 'boot' | 'error' | 'lock' | 'ready'
 
 const CONTENT_URL = `${import.meta.env.BASE_URL}data/content.enc.json`
+/** Last envelope that loaded, so the shelf still opens offline. It is ciphertext only. */
+const ENVELOPE_CACHE_KEY = 'missme:envelope'
+/** After a publish, Pages serves the old file for a minute or two: ignore it meanwhile. */
+const PUBLISH_GRACE_MS = 10 * 60_000
 
-/** PBKDF2 off the main thread; falls back to the main thread if the worker cannot start. */
-function unlockInWorker(envelope: Envelope, pin: string): Promise<UnlockResponse> {
-  const onMain = async (): Promise<UnlockResponse> => {
-    await new Promise((r) => setTimeout(r, 50)) // let the tap feedback paint first
-    const r = await unlock(envelope, pin)
-    return r ? { ck: toB64(r.ck), role: r.role } : null
+function cacheEnvelope(env: Envelope): void {
+  try {
+    localStorage.setItem(ENVELOPE_CACHE_KEY, JSON.stringify(env))
+  } catch {
+    // optional
   }
-  return new Promise((resolve) => {
-    let worker: Worker
-    try {
-      worker = new Worker(new URL('../workers/unlock.worker.ts', import.meta.url), { type: 'module' })
-    } catch {
-      resolve(onMain())
-      return
-    }
-    worker.onmessage = (e: MessageEvent<UnlockResponse>) => {
-      worker.terminate()
-      resolve(e.data)
-    }
-    worker.onerror = () => {
-      worker.terminate()
-      resolve(onMain())
-    }
-    worker.postMessage({ envelope, pin } satisfies UnlockRequest)
-  })
+}
+
+function cachedEnvelope(): Envelope | null {
+  try {
+    const x: unknown = JSON.parse(localStorage.getItem(ENVELOPE_CACHE_KEY) ?? 'null')
+    return isEnvelope(x) ? x : null
+  } catch {
+    return null
+  }
+}
+
+async function fetchEnvelope(): Promise<Envelope> {
+  // The query string gets past the 10-minute CDN cache; no-store gets past the browser's.
+  const res = await fetch(`${CONTENT_URL}?t=${Date.now()}`, { cache: 'no-store' })
+  if (!res.ok) throw new Error(String(res.status))
+  const env: unknown = await res.json()
+  if (!isEnvelope(env)) throw new Error('bad envelope')
+  return env
 }
 
 export function useApp() {
@@ -43,8 +46,13 @@ export function useApp() {
   const [wrongCount, setWrongCount] = useState(0)
 
   const localRef = useRef(local)
+  const statusRef = useRef(status)
+  useEffect(() => {
+    statusRef.current = status
+  }, [status])
   const envelopeRef = useRef<Envelope | null>(null)
   const loadingRef = useRef(false)
+  const publishedRef = useRef<{ data: string; until: number } | null>(null)
 
   const setLocal = useCallback((next: LocalState) => {
     localRef.current = next
@@ -62,24 +70,13 @@ export function useApp() {
     return localRef.current
   }, [])
 
-  const load = useCallback(async () => {
-    if (loadingRef.current) return
-    loadingRef.current = true
-    try {
-      let env: unknown
-      try {
-        const res = await fetch(CONTENT_URL, { cache: 'no-store' })
-        if (!res.ok) throw new Error(String(res.status))
-        env = await res.json()
-        if (!isEnvelope(env)) throw new Error('bad envelope')
-      } catch {
-        // A failed refresh keeps whatever is already on screen.
-        if (!envelopeRef.current) setStatus('error')
-        return
-      }
+  /** Opens `env` with the stored session, or shows the lock screen. */
+  const open = useCallback(
+    async (env: Envelope) => {
       envelopeRef.current = env
       const session = localRef.current.session
       if (!session) {
+        setContent(null)
         setStatus('lock')
         return
       }
@@ -92,10 +89,37 @@ export function useApp() {
         setContent(null)
         setStatus('lock')
       }
+    },
+    [setLocal],
+  )
+
+  const load = useCallback(async () => {
+    if (loadingRef.current) return
+    loadingRef.current = true
+    try {
+      let env: Envelope
+      try {
+        env = await fetchEnvelope()
+      } catch {
+        if (envelopeRef.current) return // a failed refresh keeps whatever is on screen
+        const cached = cachedEnvelope()
+        if (!cached) {
+          setStatus('error')
+          return
+        }
+        env = cached
+      }
+      const pub = publishedRef.current
+      if (pub) {
+        if (env.data === pub.data || Date.now() > pub.until) publishedRef.current = null
+        else return // Pages still has the file from before the publish
+      }
+      cacheEnvelope(env)
+      await open(env)
     } finally {
       loadingRef.current = false
     }
-  }, [setLocal])
+  }, [open])
 
   useEffect(() => {
     // Fetch-on-mount: state is only set after the network round trip resolves.
@@ -106,14 +130,25 @@ export function useApp() {
       sync()
       void load()
     }
-    const onStorage = () => sync()
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== STORAGE_KEY) return
+      const had = !!localRef.current.session
+      const now = sync()
+      // Locked or unlocked in another tab: follow it.
+      if (had && !now.session && statusRef.current === 'ready') {
+        setContent(null)
+        setStatus('lock')
+      } else if (!had && now.session && statusRef.current === 'lock' && envelopeRef.current) {
+        void open(envelopeRef.current)
+      }
+    }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('storage', onStorage)
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('storage', onStorage)
     }
-  }, [load, sync])
+  }, [load, open, sync])
 
   const retry = useCallback(() => {
     setStatus('boot')
@@ -145,6 +180,7 @@ export function useApp() {
   )
 
   const lock = useCallback(() => {
+    clearToken() // locking signs this device out of publishing too
     setLocal({ ...localRef.current, session: undefined })
     setContent(null)
     setStatus('lock')
@@ -154,7 +190,31 @@ export function useApp() {
     setLocal({ ...EMPTY_STATE, session: localRef.current.session })
   }, [setLocal])
 
+  /** Shows a just-published file right away instead of waiting for Pages to rebuild. */
+  const applyPublished = useCallback((env: Envelope, next: Content) => {
+    publishedRef.current = { data: env.data, until: Date.now() + PUBLISH_GRACE_MS }
+    envelopeRef.current = env
+    cacheEnvelope(env)
+    setContent(next)
+  }, [])
+
   const role: Role | undefined = local.session?.role
 
-  return { status, content, local, localRef, setLocal, sync, role, checking, wrongCount, submitPin, retry, lock, resetProgress }
+  return {
+    status,
+    content,
+    local,
+    localRef,
+    envelopeRef,
+    setLocal,
+    sync,
+    role,
+    checking,
+    wrongCount,
+    submitPin,
+    retry,
+    lock,
+    resetProgress,
+    applyPublished,
+  }
 }

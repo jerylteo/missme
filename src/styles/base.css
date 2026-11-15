@@ -539,18 +539,6 @@ button:disabled {
   flex-shrink: 0;
 }
 
-/* ---------- Admin (Phase 1 stub) ---------- */
-
-.panel {
-  border-radius: 18px;
-  background: var(--card);
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 15px;
-}
-
 /* ---------- Motion preferences ---------- */
 
 @media (hover: hover) and (pointer: fine) {
