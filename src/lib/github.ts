@@ -1,6 +1,8 @@
 // Minimal GitHub Contents API client for publishing the envelope (spec 11.4).
 // The token is passed in per call and only ever sent to api.github.com.
 
+import { fromB64, toB64 } from './crypto.ts'
+
 export const GH = {
   owner: import.meta.env?.VITE_GH_OWNER || 'jerylteo',
   repo: import.meta.env?.VITE_GH_REPO || 'missme',
@@ -47,19 +49,9 @@ async function call(input: string, init: RequestInit, fetcher: typeof fetch): Pr
   throw new GhError('other', `GitHub said ${res.status}. Try again in a minute.`)
 }
 
-function utf8ToB64(s: string): string {
-  const bytes = new TextEncoder().encode(s)
-  let bin = ''
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
-  return btoa(bin)
-}
-
-function b64ToUtf8(b64: string): string {
-  const bin = atob(b64.replace(/\s/g, ''))
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return new TextDecoder().decode(bytes)
-}
+const utf8ToB64 = (s: string): string => toB64(new TextEncoder().encode(s))
+// GitHub wraps its base64 in newlines.
+const b64ToUtf8 = (b64: string): string => new TextDecoder().decode(fromB64(b64.replace(/\s/g, '')))
 
 export async function getFile(token: string, fetcher: typeof fetch = fetch): Promise<{ sha: string; text: string }> {
   const res = await call(`${url()}?ref=${encodeURIComponent(GH.branch)}`, { headers: headers(token) }, fetcher)
