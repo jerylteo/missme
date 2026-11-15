@@ -10,7 +10,8 @@
     "lint": "oxlint",
     "test": "vitest run",
     "seal": "node --experimental-strip-types --no-warnings scripts/seal.mjs",
-    "make-icons": "node scripts/make-icons.mjs"
+    "make-icons": "node scripts/make-icons.mjs",
+    "test:e2e-seal": "node --experimental-strip-types --no-warnings e2e/test-seal.mjs"
   },
   "dependencies": {
     "@fontsource-variable/nunito": "^5.3.0",
