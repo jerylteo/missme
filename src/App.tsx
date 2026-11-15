@@ -175,7 +175,9 @@ function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: C
           onToggleFavourite={() => setLocal(toggleFavourite(app.sync(), message.id))}
           animate={!view.fromShelf}
           primaryLabel={view.fromShelf ? 'Back to my shelf' : 'Keep it on my shelf'}
-          onPrimary={() => go(view.fromShelf ? { k: 'shelf' } : { k: 'home' })}
+          onPrimary={() => go({ k: 'shelf' })}
+          secondaryLabel="Back to home"
+          onSecondary={() => go({ k: 'home' })}
           footer={footer}
         />
       )

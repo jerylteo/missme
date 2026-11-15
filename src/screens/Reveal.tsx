@@ -21,6 +21,8 @@ export function Reveal({
   primaryLabel,
   onPrimary,
   footer,
+  secondaryLabel,
+  onSecondary,
   animate = true,
 }: {
   topBar: React.ReactNode
@@ -32,6 +34,8 @@ export function Reveal({
   primaryLabel: string
   onPrimary: () => void
   footer?: string
+  secondaryLabel?: string
+  onSecondary?: () => void
   /** Slide-up entrance. Off when opened from the shelf (spec 9.5). */
   animate?: boolean
 }) {
@@ -73,6 +77,11 @@ export function Reveal({
         <button type="button" className="btn-primary" onClick={onPrimary}>
           {primaryLabel}
         </button>
+        {secondaryLabel && onSecondary && (
+          <button type="button" className="link" onClick={onSecondary}>
+            {secondaryLabel}
+          </button>
+        )}
         {footer && <div className="meta meta--center">{footer}</div>}
       </div>
     </main>

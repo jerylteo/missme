@@ -60,7 +60,7 @@ await page.getByRole('button', { name: 'Keep it on my shelf' }).waitFor({ timeou
 await page.waitForTimeout(400)
 await shot(page, '07-reveal')
 await page.getByRole('button', { name: 'Favourite this message' }).click()
-await page.getByRole('button', { name: 'Keep it on my shelf' }).click()
+await page.getByRole('button', { name: 'Back to home' }).click()
 await page.getByRole('heading', { name: 'Miss me already?' }).waitFor()
 await shot(page, '08-cooldown')
 // reload: progress and favourite must survive, still in cooldown, no PIN asked
