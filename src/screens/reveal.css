@@ -1,0 +1,106 @@
+.reveal {
+  gap: 0;
+}
+
+.reveal-body {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+}
+
+.reveal-peek {
+  align-self: center;
+  position: relative;
+  z-index: 2;
+  width: 220px;
+  height: 132px;
+  margin-top: 8px;
+}
+
+.reveal-peek img {
+  width: 220px;
+  height: 220px;
+}
+
+.msg-card {
+  position: relative;
+  margin-top: -19px;
+  border-radius: 24px;
+  background: var(--card);
+  padding: 46px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.msg-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 32px;
+  border-radius: 24px 24px 0 0;
+  background: var(--tofu-card);
+}
+
+.msg-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.msg-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.msg-no {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.msg-text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.msg-sign {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.heart {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background: var(--ground);
+  color: var(--rose);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    transform 140ms var(--ease-out),
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.heart:active {
+  transform: scale(0.9);
+}
+
+.heart.is-on {
+  background: var(--rose);
+  color: #fff;
+}

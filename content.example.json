@@ -1,0 +1,25 @@
+{
+  "settings": {
+    "cooldownMinutes": 60,
+    "dailyLimit": 3,
+    "weights": { "common": 6, "rare": 3, "secret": 1 },
+    "nicknames": ["frufru", "wifey", "my love"]
+  },
+  "categories": [
+    { "id": "work", "label": "At work" },
+    { "id": "thinking", "label": "Thinking of you" },
+    { "id": "remember", "label": "Remember when" }
+  ],
+  "messages": [
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b01", "categoryId": "work", "rarity": "common", "text": "[PLACEHOLDER 1] At work, common. Replace me with a real message before sharing the link.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b02", "categoryId": "work", "rarity": "common", "text": "[PLACEHOLDER 2] At work, common. Two to four sentences read best on one card.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b03", "categoryId": "work", "rarity": "rare", "text": "[PLACEHOLDER 3] At work, rare.\n\nLine breaks are kept, like this one.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b04", "categoryId": "thinking", "rarity": "common", "text": "[PLACEHOLDER 4] Thinking of you, common.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b05", "categoryId": "thinking", "rarity": "common", "text": "[PLACEHOLDER 5] Thinking of you, common.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b06", "categoryId": "thinking", "rarity": "rare", "text": "[PLACEHOLDER 6] Thinking of you, rare.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b07", "categoryId": "thinking", "rarity": "secret", "text": "[PLACEHOLDER 7] Thinking of you, secret. This is the long one, to check that a card taller than usual still reads well and the page scrolls instead of shrinking the text. Keep going for a few more words so it wraps onto many lines on a phone screen, and then a few more after that.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b08", "categoryId": "remember", "rarity": "common", "text": "[PLACEHOLDER 8] Remember when, common.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b09", "categoryId": "remember", "rarity": "common", "text": "[PLACEHOLDER 9] Remember when, common.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" },
+    { "id": "8f1c2a50-3b7e-4c1d-9a61-0d2e5f7a1b10", "categoryId": "remember", "rarity": "rare", "text": "[PLACEHOLDER 10] Remember when, rare.", "photo": null, "createdAt": "2026-11-15T12:00:00.000Z" }
+  ]
+}

@@ -1,0 +1,211 @@
+.opening {
+  align-items: center;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  overflow-x: clip;
+}
+
+.opening .topbar {
+  align-self: stretch;
+}
+
+.stage {
+  position: relative;
+  width: 300px;
+  height: 330px;
+  margin-top: 76px; /* room for Tofu to rise 66px above the box */
+  flex-shrink: 0;
+}
+
+.dash {
+  position: absolute;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.dash--1 {
+  left: 6px;
+  top: 96px;
+  width: 26px;
+  background: var(--rose);
+  transform: rotate(-24deg);
+}
+
+.dash--2 {
+  left: 0;
+  top: 128px;
+  width: 20px;
+  background: var(--pink-mid);
+}
+
+.dash--3 {
+  right: 2px;
+  top: 84px;
+  width: 26px;
+  background: var(--rose);
+  transform: rotate(24deg);
+}
+
+.dash--4 {
+  right: 0;
+  top: 118px;
+  width: 20px;
+  background: var(--pink-mid);
+}
+
+.obox {
+  position: absolute;
+  left: 22px;
+  top: 0;
+  width: 256px;
+  height: 314px;
+  border-radius: 24px;
+}
+
+.obox-tilt,
+.obox-drop,
+.obox-wobble,
+.obox-shake {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.obox-tilt {
+  transform: rotate(-5deg);
+}
+
+.obox-drop {
+  animation: box-drop 400ms var(--ease-out-back) both;
+}
+
+.obox-wobble {
+  animation: box-wobble 1.6s ease-in-out 400ms infinite alternate;
+  transform-origin: 50% 85%;
+}
+
+.obox-wobble.is-still {
+  animation: none;
+}
+
+.obox-shake {
+  transform-origin: 50% 85%;
+}
+
+@keyframes box-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-140px);
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes box-wobble {
+  from {
+    transform: rotate(-2deg);
+  }
+  to {
+    transform: rotate(2deg);
+  }
+}
+
+/* Fixed clip window whose bottom edge meets the box top; Tofu slides up inside it. */
+.obox-window {
+  position: absolute;
+  left: 0;
+  top: -66px;
+  width: 256px;
+  height: 144px;
+  overflow: hidden;
+}
+
+.obox-window img {
+  width: 256px;
+  height: 256px;
+  transform: translateY(66px);
+}
+
+.obox-box {
+  position: absolute;
+  left: 0;
+  top: 76px;
+  display: block;
+}
+
+.burst {
+  position: absolute;
+  left: 50%;
+  top: 76px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.burst-dot {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.burst-dot:nth-child(3n) {
+  width: 8px;
+  height: 8px;
+  left: -4px;
+  top: -4px;
+}
+
+.burst-ring {
+  position: absolute;
+  left: -70px;
+  top: -70px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 8px solid;
+  opacity: 0;
+}
+
+.opening-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.pips {
+  display: flex;
+  gap: 10px;
+}
+
+.pip {
+  width: 44px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--card);
+  transition: background-color 150ms ease;
+}
+
+.pip.is-on {
+  background: var(--rose);
+}
+
+.opening-help {
+  font-size: 15px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obox-drop {
+    animation: fade-in 200ms ease-out both;
+  }
+
+  .obox-wobble {
+    animation: none;
+  }
+}
