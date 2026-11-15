@@ -21,6 +21,7 @@ export function Reveal({
   primaryLabel,
   onPrimary,
   footer,
+  animate = true,
 }: {
   topBar: React.ReactNode
   message: Message
@@ -31,12 +32,14 @@ export function Reveal({
   primaryLabel: string
   onPrimary: () => void
   footer?: string
+  /** Slide-up entrance. Off when opened from the shelf (spec 9.5). */
+  animate?: boolean
 }) {
   return (
-    <main className="screen reveal">
+    <main className={animate ? 'screen reveal screen-enter' : 'screen reveal'}>
       {topBar}
 
-      <div className="reveal-body screen-enter">
+      <div className="reveal-body">
         <div className="peek reveal-peek">
           <img src={tofuPeek} alt="Tofu the Birman kitten peeking over the message card" width={220} height={220} />
         </div>

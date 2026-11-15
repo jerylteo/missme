@@ -79,12 +79,12 @@
 }
 
 .obox-wobble {
-  animation: box-wobble 1.6s ease-in-out 400ms infinite alternate;
+  animation: box-wobble 3.2s ease-in-out 400ms infinite;
   transform-origin: 50% 85%;
 }
 
 .obox-wobble.is-still {
-  animation: none;
+  animation-play-state: paused;
 }
 
 .obox-shake {
@@ -102,10 +102,14 @@
 }
 
 @keyframes box-wobble {
-  from {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
     transform: rotate(-2deg);
   }
-  to {
+  75% {
     transform: rotate(2deg);
   }
 }

@@ -117,7 +117,7 @@ export function Opening({
   const shake = (deg: number, duration: number) =>
     shakeRef.current?.animate(
       [0, -deg, deg, -deg * 0.6, deg * 0.6, 0].map((d) => ({ transform: `rotate(${d}deg)` })),
-      { duration, easing: 'ease-out' },
+      { duration, easing: 'ease-out', composite: 'add' },
     )
 
   const tap = async () => {

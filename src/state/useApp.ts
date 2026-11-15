@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type Content, normalizeContent } from '../lib/content.ts'
 import { decryptContent, type Envelope, fromB64, isEnvelope, type Role, toB64, unlock } from '../lib/crypto.ts'
-import { EMPTY_STATE, loadState, type LocalState, saveState } from '../lib/storage.ts'
+import { EMPTY_STATE, loadState, type LocalState, readStored, saveState } from '../lib/storage.ts'
 import type { UnlockRequest, UnlockResponse } from '../workers/unlock.worker.ts'
 
 export type Status = 'boot' | 'error' | 'lock' | 'ready'
@@ -52,6 +52,16 @@ export function useApp() {
     setLocalState(next)
   }, [])
 
+  /** Picks up changes written by another tab or window. Returns the freshest state. */
+  const sync = useCallback((): LocalState => {
+    const stored = readStored()
+    if (stored && JSON.stringify(stored) !== JSON.stringify(localRef.current)) {
+      localRef.current = stored
+      setLocalState(stored)
+    }
+    return localRef.current
+  }, [])
+
   const load = useCallback(async () => {
     if (loadingRef.current) return
     loadingRef.current = true
@@ -92,11 +102,18 @@ export function useApp() {
     // oxlint-disable-next-line react-hooks/set-state-in-effect
     void load()
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void load()
+      if (document.visibilityState !== 'visible') return
+      sync()
+      void load()
     }
+    const onStorage = () => sync()
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [load])
+    window.addEventListener('storage', onStorage)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [load, sync])
 
   const retry = useCallback(() => {
     setStatus('boot')
@@ -139,5 +156,5 @@ export function useApp() {
 
   const role: Role | undefined = local.session?.role
 
-  return { status, content, local, localRef, setLocal, role, checking, wrongCount, submitPin, retry, lock, resetProgress }
+  return { status, content, local, localRef, setLocal, sync, role, checking, wrongCount, submitPin, retry, lock, resetProgress }
 }

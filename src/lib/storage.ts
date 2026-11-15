@@ -47,6 +47,16 @@ export function loadState(): LocalState {
   }
 }
 
+/** What is on disk right now, or null when storage is unreadable or empty. */
+export function readStored(): LocalState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? parseState(raw) : null
+  } catch {
+    return null
+  }
+}
+
 /** Returns false when the write failed (private mode, quota). */
 export function saveState(state: LocalState): boolean {
   try {

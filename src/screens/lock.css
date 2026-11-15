@@ -1,6 +1,7 @@
 .lock {
   align-items: center;
   gap: 18px;
+  height: 100dvh; /* fixed height so Tofu shrinks before the keypad leaves the screen */
   padding-top: calc(40px + env(safe-area-inset-top));
   padding-bottom: calc(28px + env(safe-area-inset-bottom));
 }
@@ -74,7 +75,7 @@
 }
 
 .lock-key:active:not(:disabled) {
-  transform: scale(0.94);
+  transform: scale(0.96);
   background: var(--pink-soft);
 }
 

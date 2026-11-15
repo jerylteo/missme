@@ -5,7 +5,7 @@ import { mkdirSync } from 'node:fs'
 
 const out = process.argv[2] ?? 'test-results/shots'
 mkdirSync(out, { recursive: true })
-const URL = 'http://localhost:4173/missme/'
+const URL = process.env.MISSME_URL ?? 'http://localhost:4173/missme/'
 const VIEWER = process.env.MISSME_VIEWER_PIN ?? '111111'
 const ADMIN = process.env.MISSME_ADMIN_PIN ?? '222222'
 const problems = []

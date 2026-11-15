@@ -22,8 +22,11 @@ export function Lock({ checking, wrongCount, onSubmit }: { checking: boolean; wr
   }
   const showWrong = wrongCount > 0 && !typedSinceWrong && !checking
 
+  const shakenFor = useRef(wrongCount)
   useEffect(() => {
-    if (wrongCount === 0) return
+    // Only a new wrong attempt shakes; a lock screen that mounts later stays still.
+    if (wrongCount === shakenFor.current) return
+    shakenFor.current = wrongCount
     pinRef.current = ''
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     dotsRef.current?.animate(

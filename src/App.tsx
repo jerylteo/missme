@@ -60,7 +60,7 @@ export default function App() {
 }
 
 function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: Content }) {
-  const { local, localRef, setLocal } = app
+  const { local, setLocal } = app
   const [view, setView] = useState<View>({ k: 'home' })
   const [picked, setPicked] = useState(SURPRISE)
   const [now, setNow] = useState(() => Date.now())
@@ -84,12 +84,16 @@ function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: C
   const soldOut = remaining.length === 0
   const waiting = !soldOut && g.kind !== 'ready'
 
+  // A revealed message that vanished from the content file falls back to the home states.
+  const revealGone = view.k === 'reveal' && !(byId.has(view.id) && openedIds.has(view.id))
+  const onHome = view.k === 'home' || revealGone
+
   // Live clock only while a countdown is on screen.
   useEffect(() => {
-    if (view.k !== 'home' || !waiting) return
+    if (!onHome || !waiting) return
     const id = setInterval(() => setNow(Date.now()), 500)
     return () => clearInterval(id)
-  }, [view.k, waiting])
+  }, [onHome, waiting])
 
   useEffect(() => {
     const onVisible = () => {
@@ -114,7 +118,7 @@ function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: C
 
   /** The draw: checked against the freshest stored state, recorded before any animation. */
   const drawNow = (categoryId: string): Message | null => {
-    const state = localRef.current
+    const state = app.sync() // another tab may have opened a box since this one rendered
     const t = new Date()
     if (gate(state.opened, state.lastOpenAt, content.settings, t).kind !== 'ready') return null
     const m = draw(pool(content, new Set(state.opened.map((o) => o.id)), categoryId), content.settings.weights)
@@ -168,7 +172,8 @@ function Unlocked({ app, content }: { app: ReturnType<typeof useApp>; content: C
           categoryLabel={catLabel.get(message.categoryId) ?? ''}
           number={index + 1}
           favourite={local.favourites.includes(message.id)}
-          onToggleFavourite={() => setLocal(toggleFavourite(localRef.current, message.id))}
+          onToggleFavourite={() => setLocal(toggleFavourite(app.sync(), message.id))}
+          animate={!view.fromShelf}
           primaryLabel={view.fromShelf ? 'Back to my shelf' : 'Keep it on my shelf'}
           onPrimary={() => go(view.fromShelf ? { k: 'shelf' } : { k: 'home' })}
           footer={footer}
