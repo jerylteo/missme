@@ -91,4 +91,5 @@ Admin list, editor (no photo), settings, publish via GitHub Contents API (spec 1
 - No gradients, emoji or drop shadows. Rarity always shown as a word.
 - Never commit `content.local.json` or any PIN. Check `content.enc.json` has no readable text before each push.
 - iOS has no Vibration API: haptics are best effort through the hidden `<input type="checkbox" switch>` trick and must never block.
+- Jeryl runs `npm run seal` himself in Terminal (hidden PIN prompts; Claude never sees PINs). Before it, validate `content.local.json` with `validateContent` and report counts only, never message text. After it, check the envelope for readable words, then commit and push.
 - Commands: `npm run dev`, `npm test`, `npm run build`, `npm run seal`.
