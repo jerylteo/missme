@@ -1,6 +1,6 @@
 /* Admin screens. Numbers from the Admin, AdminEdit and AdminSettings artboards. */
 
-.admin {
+.screen.admin {
   --pad-top: calc(28px + env(safe-area-inset-top));
   --pad-x-l: calc(20px + env(safe-area-inset-left));
   --pad-x-r: calc(20px + env(safe-area-inset-right));
@@ -9,11 +9,11 @@
   font-size: 15px;
 }
 
-.admin-edit {
+.screen.admin-edit {
   gap: 16px;
 }
 
-.h1--admin {
+.admin .h1--admin {
   font-size: 32px;
   line-height: 1.1;
 }
@@ -42,6 +42,8 @@
   min-height: 0;
   min-width: 0;
   display: inline;
+  /* Vertical padding on an inline box adds no line height, but makes the tap target 44px. */
+  padding: 12px 0;
   font-size: inherit;
   text-decoration: underline;
 }

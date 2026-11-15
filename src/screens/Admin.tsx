@@ -128,7 +128,7 @@ export function Admin(props: AdminProps) {
           {d.base.messages.length} live · {pending === 0 ? 'everything published' : `${pending} ${pending === 1 ? 'change' : 'changes'} not published yet`}
         </p>
         {pending > 0 && (
-          <button type="button" className="link admin-discard" onClick={() => setConfirmDiscard(true)}>
+          <button type="button" className="link admin-discard" disabled={publishing} onClick={() => setConfirmDiscard(true)}>
             Discard changes
           </button>
         )}
@@ -218,7 +218,7 @@ export function Admin(props: AdminProps) {
           >
             Delete
           </button>
-          <button type="button" className="btn-outline admin-btn" autoFocus onClick={() => setConfirmDelete(null)}>
+          <button type="button" className="btn-outline admin-btn" data-autofocus onClick={() => setConfirmDelete(null)}>
             Keep it
           </button>
         </div>
@@ -241,7 +241,7 @@ export function Admin(props: AdminProps) {
           >
             Discard
           </button>
-          <button type="button" className="btn-outline admin-btn" autoFocus onClick={() => setConfirmDiscard(false)}>
+          <button type="button" className="btn-outline admin-btn" data-autofocus onClick={() => setConfirmDiscard(false)}>
             Keep them
           </button>
         </div>

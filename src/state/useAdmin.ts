@@ -167,9 +167,11 @@ export function useAdmin({
         const back = await decryptContent(env, key.current)
         if (JSON.stringify(back) !== JSON.stringify(merged)) throw new PublishError('Self-check failed. Nothing was published.')
         const file = JSON.stringify(env)
+        // Only the encoded values: a short message may equal a field name such as "viewer".
+        const values = [env.iv, env.data, ...Object.values(env.slots).flatMap((s) => [s.salt, s.iv, s.wrapped])].join('\n')
         for (const m of merged.messages) {
           const probe = m.text.slice(0, 12)
-          if (probe.length >= 6 && file.includes(probe)) throw new PublishError('Self-check failed. Nothing was published.')
+          if (probe.length >= 6 && values.includes(probe)) throw new PublishError('Self-check failed. Nothing was published.')
         }
         try {
           await putFile(token, file + '\n', sha, `Publish ${n} ${n === 1 ? 'change' : 'changes'}`)
@@ -178,7 +180,11 @@ export function useAdmin({
           throw e
         }
         applyPublished(env, merged)
-        setDrafts(fresh(merged))
+        // Anything edited while the upload was in flight stays as a draft on top of what went out.
+        const now = draftsRef.current ?? d
+        const slots: Drafts['slots'] = {}
+        for (const role of ['viewer', 'admin'] as const) if (now.slots[role] && now.slots[role] !== d.slots[role]) slots[role] = now.slots[role]
+        setDrafts({ base: merged, draft: now === d ? merged : applyChanges(merged, { base: d.draft, draft: now.draft }), slots })
         return
       }
     },

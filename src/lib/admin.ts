@@ -69,7 +69,13 @@ export function applyChanges(remote: Content, d: Pick<Drafts, 'base' | 'draft'>)
   // Never drop a category a message still uses (one may have been added elsewhere).
   const used = new Set(messages.map((m) => m.categoryId))
   const kept = new Set(categories.map((c) => c.id))
-  for (const c of remote.categories) if (used.has(c.id) && !kept.has(c.id)) categories = [...categories, c]
+  // Remote first; the draft covers one that was deleted elsewhere while a drafted message still uses it.
+  for (const c of [...remote.categories, ...d.draft.categories]) {
+    if (used.has(c.id) && !kept.has(c.id)) {
+      categories = [...categories, c]
+      kept.add(c.id)
+    }
+  }
   const s = d.draft.settings
   const b = d.base.settings
   const r = remote.settings

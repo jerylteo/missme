@@ -17,11 +17,14 @@ A small private web app: enter a PIN, pick a mood, tap a blind box, and Tofu rev
 
 ## Topping up messages from the laptop
 
-1. Edit `content.local.json` (it is not committed).
-2. Run `npm run seal` and enter the viewer PIN, then the admin PIN.
-3. Commit `public/data/content.enc.json` and push to `main`.
+The phone publishes straight to GitHub, so start from what is live:
 
-Publish from the phone after a laptop seal only if both PINs stayed the same; a new key makes the phone ask to unlock again.
+1. `git pull`, then `npm run unseal` (admin PIN). This rewrites `content.local.json` from the sealed file; the previous copy is kept as `content.backup.local`.
+2. Edit `content.local.json` (it is not committed).
+3. Run `npm run seal` and enter the viewer PIN, then the admin PIN.
+4. Commit `public/data/content.enc.json` and push to `main`.
+
+`npm run seal` stops if the sealed file has messages your local file lacks (`-- --drop` removes them on purpose) or if the PINs do not open it (`-- --new-key` replaces the key on purpose: every device must unlock again and unpublished phone drafts are lost).
 
 ## Regenerating icons
 

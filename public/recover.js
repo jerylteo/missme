@@ -6,6 +6,9 @@ addEventListener(
   function (e) {
     var t = e.target
     if (!t || !(t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && /stylesheet|modulepreload/.test(t.rel)))) return
+    // Only the app's own build files: a blocked third-party tag must not trigger a reload.
+    var base = new URL('assets/', document.baseURI).href
+    if (String(t.src || t.href || '').indexOf(base) !== 0) return
     try {
       if (sessionStorage.getItem('missme:recovered')) return
       sessionStorage.setItem('missme:recovered', '1')

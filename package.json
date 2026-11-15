@@ -10,6 +10,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "seal": "node --experimental-strip-types --no-warnings scripts/seal.mjs",
+    "unseal": "node --experimental-strip-types --no-warnings scripts/seal.mjs --pull",
     "make-icons": "node scripts/make-icons.mjs",
     "test:e2e-seal": "node --experimental-strip-types --no-warnings e2e/test-seal.mjs"
   },

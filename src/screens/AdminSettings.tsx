@@ -74,7 +74,7 @@ function CategoryRow({
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(label)
   const v = value.trim()
-  const ok = v.length > 0 && (v === label || !taken(v))
+  const ok = v.length > 0 && (v.toLowerCase() === label.toLowerCase() || !taken(v))
   if (editing) {
     return (
       <form
@@ -164,7 +164,7 @@ function PinSheet({
   const whose = role === 'viewer' ? 'her' : 'your'
   const digits = (s: string) => s.replace(/\D/g, '').slice(0, 6)
   return (
-    <Sheet open={!!role} onClose={close} labelledBy="pin-title">
+    <Sheet open={!!role} onClose={close} locked={busy} labelledBy="pin-title">
       <form
         className="sheet-form"
         onSubmit={(e) => {

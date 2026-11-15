@@ -119,7 +119,7 @@ export function AdminEdit({
           <button type="button" className="btn-primary admin-btn" onClick={() => message && onDelete(message.id)}>
             Delete
           </button>
-          <button type="button" className="btn-outline admin-btn" autoFocus onClick={() => setConfirmDelete(false)}>
+          <button type="button" className="btn-outline admin-btn" data-autofocus onClick={() => setConfirmDelete(false)}>
             Keep it
           </button>
         </div>

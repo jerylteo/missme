@@ -81,6 +81,23 @@ describe('admin changes', () => {
     expect(m.id).toMatch(/^[0-9a-f-]{36}$/)
     expect(m.photo).toBeNull()
   })
+
+  it('keeps a category that was deleted remotely while a drafted message still uses it', () => {
+    const d = upsertMessage(base, msg('n', 'brand new', 'thinking'))
+    const remote: Content = { ...base, categories: base.categories.filter((c) => c.id !== 'thinking'), messages: base.messages.filter((m) => m.id !== 'c') }
+    const out = applyChanges(remote, drafts(d))
+    expect(out.categories.map((c) => c.id)).toEqual(['work', 'thinking'])
+    expect(normalizeContent(out).messages.map((m) => m.id)).toContain('n')
+  })
+
+  it('rebases edits made during a publish onto what went out', () => {
+    const sent = upsertMessage(base, msg('n', 'brand new'))
+    const merged = applyChanges(base, drafts(sent))
+    const later = deleteMessage(upsertMessage(sent, msg('z', 'typed while publishing')), 'a')
+    const next = applyChanges(merged, { base: sent, draft: later })
+    expect(next.messages.map((m) => m.id)).toEqual(['b', 'c', 'n', 'z'])
+    expect(changeCount({ base: merged, draft: next, slots: {} })).toBe(2)
+  })
 })
 
 describe('crypto for publishing', () => {

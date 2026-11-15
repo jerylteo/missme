@@ -12,6 +12,28 @@ const ENVELOPE_CACHE_KEY = 'missme:envelope'
 /** After a publish, Pages serves the old file for a minute or two: ignore it meanwhile. */
 const PUBLISH_GRACE_MS = 10 * 60_000
 
+/** Which file this device last published, kept across reloads so a stale Pages copy cannot replace it. */
+const PUBLISHED_KEY = 'missme:published'
+type Published = { data: string; until: number }
+
+function readPublished(): Published | null {
+  try {
+    const x = JSON.parse(localStorage.getItem(PUBLISHED_KEY) ?? 'null') as Partial<Published> | null
+    return x && typeof x.data === 'string' && typeof x.until === 'number' ? { data: x.data, until: x.until } : null
+  } catch {
+    return null
+  }
+}
+
+function writePublished(p: Published | null): void {
+  try {
+    if (p) localStorage.setItem(PUBLISHED_KEY, JSON.stringify(p))
+    else localStorage.removeItem(PUBLISHED_KEY)
+  } catch {
+    // optional
+  }
+}
+
 function cacheEnvelope(env: Envelope): void {
   try {
     localStorage.setItem(ENVELOPE_CACHE_KEY, JSON.stringify(env))
@@ -52,7 +74,7 @@ export function useApp() {
   }, [status])
   const envelopeRef = useRef<Envelope | null>(null)
   const loadingRef = useRef(false)
-  const publishedRef = useRef<{ data: string; until: number } | null>(null)
+  const publishedRef = useRef<Published | null>(null)
 
   const setLocal = useCallback((next: LocalState) => {
     localRef.current = next
@@ -84,7 +106,8 @@ export function useApp() {
         setContent(normalizeContent(await decryptContent(env, fromB64(session.ck))))
         setStatus('ready')
       } catch {
-        // Key or PINs were rotated: ask again.
+        // Key or PINs were rotated: ask again, and sign out of publishing as lock() does.
+        clearToken()
         setLocal({ ...localRef.current, session: undefined })
         setContent(null)
         setStatus('lock')
@@ -109,10 +132,17 @@ export function useApp() {
         }
         env = cached
       }
-      const pub = publishedRef.current
+      const pub = (publishedRef.current ??= readPublished())
       if (pub) {
-        if (env.data === pub.data || Date.now() > pub.until) publishedRef.current = null
-        else return // Pages still has the file from before the publish
+        if (env.data === pub.data || Date.now() > pub.until) {
+          publishedRef.current = null
+          writePublished(null)
+        } else {
+          // Pages still has the file from before the publish: keep ours.
+          if (envelopeRef.current) return
+          const mine = cachedEnvelope()
+          if (mine?.data === pub.data) env = mine
+        }
       }
       cacheEnvelope(env)
       await open(env)
@@ -193,6 +223,7 @@ export function useApp() {
   /** Shows a just-published file right away instead of waiting for Pages to rebuild. */
   const applyPublished = useCallback((env: Envelope, next: Content) => {
     publishedRef.current = { data: env.data, until: Date.now() + PUBLISH_GRACE_MS }
+    writePublished(publishedRef.current)
     envelopeRef.current = env
     cacheEnvelope(env)
     setContent(next)
