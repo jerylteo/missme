@@ -2,7 +2,7 @@
 
 Static, phone-first web app. Cindy enters a PIN, picks a mood, taps a blind box, and Tofu reveals a saved message from Jeryl. Full product spec: `MISSME_SPEC.md`. Where this file and the spec disagree, **this file wins** (see "Overrides").
 
-Status: Phase 1 built. Phase 2 (admin) not started. The admin PIN currently opens a stub with "reset progress" and "lock this device". Styling is plain per-screen CSS files (not CSS Modules). `node e2e/shots.mjs` walks every screen in WebKit against `vite preview --port 4173`.
+Status and next steps: see "Current state" below. History is in `PASSLOG.md`.
 
 ## Decisions (confirmed with Jeryl, 15 Nov 2026)
 
@@ -19,7 +19,7 @@ Status: Phase 1 built. Phase 2 (admin) not started. The admin PIN currently open
 | Area | Choice |
 |---|---|
 | Build | Vite + React + TypeScript (strict), `base: '/missme/'` |
-| Styling | Plain CSS: `src/styles/tokens.css` + CSS Modules per component. No UI library, no router |
+| Styling | Plain CSS: `src/styles/tokens.css`, `base.css`, one `.css` per screen. No CSS Modules, no UI library, no router |
 | Fonts | Self-hosted Quicksand + Nunito via `@fontsource-variable/*` (no Google Fonts request) |
 | State | One `useReducer` store + a `storage.ts` wrapper over `missme:v1`. Views are state, never paths |
 | Motion | CSS keyframes + Web Animations API; springs via CSS `linear()` easing. No animation library |
@@ -49,33 +49,33 @@ Status: Phase 1 built. Phase 2 (admin) not started. The admin PIN currently open
 src/lib/        crypto.ts  content.ts  draw.ts  limits.ts  storage.ts  haptics.ts   (pure, tested)
 src/workers/    unlock.worker.ts
 src/state/      store.ts (reducer, view selection per spec 6.3)
-src/components/ TopBar  BlindBox  TofuPeek  Chip  RarityTag  PrimaryButton  Countdown
-src/screens/    Lock  Home  Opening  Reveal  Shelf  Cooldown  SoldOut
+src/components/ ui.tsx (TopBar, BackBar, BlindBox, Hero, RarityTag)
+src/screens/    Lock  Opening  Reveal  Shelf (+ one .css each); Home, Cooldown, SoldOut, admin stub live in src/App.tsx
 src/styles/     tokens.css  base.css
 scripts/seal.mjs            content.local.json (gitignored) -> public/data/content.enc.json
 ```
 
-## Phase 1 plan (tonight)
+## Current state
 
-Main session stays on Fable 5.2 and owns the contract, the lib and the animation. Subagents only take work that does not touch files the main session is editing. Brief each one with goal, exact paths, constraints, done-when, and a 15-line reply cap.
+Works now (live at https://www.jerylteo.com/missme/, sealed with Jeryl's real PINs and 30 real messages):
+- Lock, home, opening animation, reveal, shelf, cooldown, sold out, offline screen.
+- Viewer PIN shows no gear. Admin PIN shows a gear that opens a stub: "Reset my progress on this device" and "Lock this device".
+- `npm run seal`, 23 unit tests, WebKit walkthrough (`e2e/shots.mjs`), Pages deploy on push to `main`.
 
-| Step | Work | Who | Model / effort |
-|---|---|---|---|
-| 0 | Create `~/Developer/missme`, scaffold, `git init`, create public repo, install skills, pull Tofu PNGs, write `tokens.css` + types | main | Fable 5.2 / medium |
-| 1 | `src/lib/*` test-first: crypto round trip, wrong PIN, slot to role, draw weights over 10,000 draws, no repeats, cooldown, daily cap, midnight reset. Then `seal.mjs` | main | Fable 5.2 / high |
-| 2a | Pages workflow, manifest, icons from waving Tofu, iOS meta tags, README | subagent, parallel with 1 | Sonnet 5.5 / medium |
-| 2b | Shared components, then screens ported from the artboards: Lock, Home, Cooldown, SoldOut, Shelf, Reveal | main; Shelf + SoldOut may go to one subagent once components exist | Fable 5.2 / medium (subagent: Sonnet 5.5 / medium) |
-| 3 | Opening animation (spec 10), haptics, reduced-motion path | main, using emilkowalski skills | Fable 5.2 / high |
-| 4 | Wire store, refetch on open and `visibilitychange`, offline error screen | main | Fable 5.2 / medium |
-| 5 | Verify: Vitest, Playwright screenshots of every screen at 402x874 and 360 wide, walk the spec 14 checklist | main | Fable 5.2 / high |
-| 6 | Review: `/code-review high`, `review-animations`, `web-design-guidelines` audit; one fresh-context reviewer checks the build against spec 6, 9, 13 | built-in skill + subagent | Opus 5.5 / high |
-| 7 | Seal placeholders with throwaway test PINs, push, confirm the live URL, hand over | main | Fable 5.2 / medium |
+Next steps, in order:
+1. Jeryl checks it on the iPhone 17 Pro (Safari and home-screen app): haptics, animation feel, safe areas. Nothing has run on real hardware yet.
+2. Jeryl replaces `src/assets/tofu-{peek,wave,point}.png` with the 1264px Canva exports, then `npm run make-icons`.
+3. Phase 2: in-app admin (below).
 
-Jeryl's part after step 7: check it on the phone, write real messages in `content.local.json`, run `npm run seal` with the two real PINs (Claude never sees them), push. Cindy adds the site to her home screen before first use.
+Open questions:
+- Whether to keep `.claude/skills/` and `MISSME_SPEC.md` in the public repo.
+- Whether tier-based rarity (60/30/10 by tier, then uniform inside the tier) is what Jeryl wants, or per-message weights.
+
+Testing after a real seal: the committed `public/data/content.enc.json` no longer opens with test PINs. To run the walkthrough, `npm run build`, write a test envelope into `dist/data/content.enc.json` only (seal `content.example.json` with 111111 / 222222 via `src/lib/crypto.ts`), run `npx vite preview --port 4173`, then `node e2e/shots.mjs`. Never write a test envelope into `public/`.
 
 ## Phase 2 plan (later session)
 
-Admin list, editor (no photo), settings, publish via GitHub Contents API (spec 11). Main session on Opus 5.5 / high; Settings screen can go to a Sonnet 5.5 subagent. Finish with `/security-review` on token handling and `/code-review high`. No data migration: same envelope, same crypto.
+Admin list, editor (no photo), settings, publish via GitHub Contents API (spec 11). Models agreed with Jeryl: main session on Opus 5.5 / high; Settings screen can go to a Sonnet 5.5 subagent. Finish with `/security-review` on token handling and `/code-review high`. No data migration: same envelope, same crypto.
 
 ## Skills
 
